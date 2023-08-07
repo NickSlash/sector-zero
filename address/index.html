@@ -152,6 +152,8 @@
 
             if (cmd == "!SETTARGET") { return run_setOption("target", Object.keys(mapLink)) }
 
+            if (!app.url) { return status("Service URL Not Found") }
+
             let callback = `jQuery${id(20)}_${id(13)}`
             window[callback] = jsonp_callback
             let script = document.createElement("script")
