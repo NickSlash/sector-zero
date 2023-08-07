@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="referrer" content="no-referrer">
+    <title>Address Lookup</title>
+    <style>
+        :root {
+            --font: 'Roboto Mono', monospace;
+            --shadow: rgba(0, 0, 0, 0.12) 0px 1px 3px, rgba(0, 0, 0, 0.24) 0px 1px 2px;
+            --margin: 0.5rem;
+            --size: 2rem;
+            --color-input: white;
+            --color-background: #fafbf6;
+            --color-button: #565a75;
+            --color-status: #c6b7be;
+            --color-pin: #dfdfdf;
+        }
+        html {
+            font-size: 16px;
+            background-color: var(--color-background);
+        }
+        #container {
+            position: relative;
+            padding: 0;
+            inset: 0 0 0 0;
+        }
+        a { 
+            display: block;
+        }
+        a:link, a:visited, a:hover, a:active {
+            text-decoration: none;
+        }
+        #container > div, #container > input[type=text], #container > a, #container > hr {
+            position: relative;
+            width: 100%;
+            padding: 0 var(--margin);
+            border: 0;
+            border-radius: var(--margin);
+            outline: 0;
+            box-shadow: var(--shadow);
+            font-family: var(--font);
+            font-size: calc(var(--size) / 2);
+            line-height:var(--size);
+            box-sizing: border-box;
+            margin-bottom: var(--margin);    
+        }
+        #command {
+            background-color: var(--color-input);
+        }
+        #button {
+            display: flex;
+            background-color: var(--color-button);
+            color: var(--color-background);
+            justify-content: center;
+        }
+        #status {
+            display: flex;
+            background-color: var(--color-status);
+            color: var(--button);
+            align-items: center;
+        }
+        #separator {
+            height: calc(var(--size) / 2);
+            background-color: var(var(--color-input));
+        }
+    </style>
+    <script type="module">
+        import OsGridRef from 'https://cdn.jsdelivr.net/npm/geodesy@2/osgridref.min.js'
+        window.GR = OsGridRef
+    </script>
+    <script>
+        const ui = {
+            "container": null,
+            "command": null,
+            "button": null,
+            "status": null,
+            "separator": null
+        }
+
+        const app = {
+            url: null,
+            log: null,
+            target: "osmand",
+            zoom: 15
+        }
+
+        const mapLink = {
+            "osmand": (lat,lon) => `https://osmand.net/go?lat=${lat}&lon=${lon}&z=${app.zoom}`,
+            "apple": (lat,lon) => `https://maps.apple.com/?ll=${lat},${lon}`,
+            "waze": (lat,lon) => `https://www.waze.com/ul?ll=${lat},${lon}&navigate=yes&zoom=${app.zoom}`,
+            "google": (lat,lon) => `http://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=driving`
+        }
+
+        window.addEventListener("DOMContentLoaded", function() {
+            ui.container = document.querySelector("#container")
+            ui.command = document.querySelector("#command")
+            ui.button = document.querySelector("#button")
+            ui.status = document.querySelector("#status")
+            ui.separator = document.querySelector("#separator")
+
+            app.url = localStorage.getItem("app.url") || ""
+            app.log = localStorage.getItem("app.log") || ""
+            app.target = localStorage.getItem("app.target") || "osmand"
+            app.zoom = localStorage.getItem("app.zoom") || 15
+
+            ui.button.addEventListener("click", run_command)
+
+            ui.command.addEventListener("keyup", function(e) {
+                e.preventDefault();
+                if (e.keyCode === 13) run_command()
+            })
+        })
+        function id(t){let r="";for(let o=0;o<t;o++)r+="0123456789".charAt(Math.floor(10*Math.random()));return r}
+        function jsonp_callback(response) {
+            clear()
+            if ("string" == typeof response) {
+                status("No Results")
+                return
+            }
+            status("Search Complete")
+            let data = process_response(response)
+            data.forEach( (item) => {
+                let point = new GR(item[1],item[2]).toLatLon()
+                let link = document.createElement("a")
+                link.setAttribute("href", mapLink[app.target](point._lat, point._lon))
+                link.appendChild(document.createTextNode(item[3]))
+                ui.container.appendChild(link)
+            })
+            if (app.log) {
+                let body = { "key": "mykey", "list": data }
+                let blob = new Blob([JSON.stringify(body)], { "type": "text/plain", "redirect": "follow" })
+                navigator.sendBeacon(app.log, blob)
+            }
+        }
+        function process_response(response) {
+            return Array.from(response.data, (dataItem) => Array.from( Array.from(["UniqueId","X","Y","Name"], (item) =>  response.columns.indexOf(item) ) , (key) => dataItem[key]))
+        }
+        function run_command() {
+            let cmd = ui.command.value.toUpperCase().replace(/^\s+|\s+$/g, '')
+
+            ui.command.value = ""
+
+            if (cmd == "") { return clear() }
+            
+            if (cmd == "!SETURL") { return run_setString("url") }
+
+            if (cmd == "!SETLOG") { return run_setString("log") }
+
+            if (cmd == "!SETZOOM") { return run_setString("zoom") }
+
+            if (cmd == "!SETTARGET") { return run_setOption("target", Object.keys(mapLink)) }
+
+            let callback = `jQuery${id(20)}_${id(13)}`
+            window[callback] = jsonp_callback
+            let script = document.createElement("script")
+            script.setAttribute("type", "text/javascript")
+            script.setAttribute("src", app.url.replace("%callback%", callback).replace("%query%", cmd))
+            status("Searching....")
+            document.head.appendChild(script)
+        }
+        function run_set(name, value) {
+            app[name] = value
+            localStorage.setItem(`app.${name}`, app[name])
+        }
+        function run_setString(name) {
+            run_set(name, prompt("enter value"))
+            status(`Updated ${name}`)
+        }
+        function run_setOption(name, options) {
+            clear()
+            status("Select Target")
+            options.forEach( (option) => {
+                let link = document.createElement("div")
+                link.appendChild(document.createTextNode(option))
+                link.addEventListener("click", function() { 
+                    run_set(name,option);
+                    clear()
+                    status(`Updated ${name} (${option})`)
+                })
+                ui.container.appendChild(link)
+            })
+        }
+        function clear() {
+            while (ui.separator.nextElementSibling) separator.parentElement.removeChild(separator.nextElementSibling)
+            status("Ready")
+        }
+        function status(message) {
+            while (ui.status.firstChild) ui.status.removeChild(ui.status.lastChild)
+            ui.status.appendChild(document.createTextNode(message))
+        }
+    </script>
+</head>
+<body>
+    <div id="container">
+        <input type="text" id="command" autocomplete="off"/>
+        <div id="button">Go</div>
+        <div id="status">Ready</div>
+        <hr id="separator">
+    </div>
+</body>
+</html>
