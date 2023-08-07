@@ -1,0 +1,46 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="height=device-height, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, target-densitydpi=device-dpi" />
+    <style>
+        body {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            animation-name: backgroundPalette;
+            animation-duration: 4s;
+            animation-iteration-count: infinite;
+            animation-direction: alternate;
+            animation-timing-function: linear;
+            overscroll-behavior: contain;
+        }
+        #logo {
+            position: absolute;
+            height: 50vw;
+            width: 50vw;
+            top: 50%;
+            left: 50%;
+            transform: translateX(-50%) translateY(-50%);
+            background-image: url(logo.svg);
+            background-repeat: no-repeat;
+            background-position: center center;
+            background-size: contain;
+        }
+        @keyframes backgroundPalette {
+            0% { background: #ee6055; }
+            25% { background: #60d394; }
+            50% { background: #aaf683; }
+            75% { background: #ffd97d; }
+            100% { background: #ff9b85; }
+        }
+    </style>
+    <title>sector-zero.uk</title>
+</head>
+<body>
+    <div id="logo"></div>
+</body>
+</html>
