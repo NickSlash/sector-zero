@@ -21,17 +21,15 @@
 
         const generate = () => {
             let aztec = document.getElementById("aztec")
-            let username = document.getElementById("username")
-            let password = document.getElementById("password")
+            let word = document.getElementById("word")
             let text = document.getElementById("text")
             let value = text.value
             let bcid = undefined
-            let includetext = false
             let targetWidth = undefined
             let targetHeight = undefined
             let defaultScale = 1
             let borderWidth = 15
-            if (aztec.selected + username.selected + password.selected != 1) {
+            if (aztec.selected + word.selected != 1) {
                 return
             }
             if (value.trim().length == 0) {
@@ -41,28 +39,18 @@
                 bcid = "azteccode"
                 defaultScale = 2
             }
-            if (username.selected) {
-                //bcid = "code128"
+            if (word.selected) {
                 bcid = "azteccode"
                 value += "^013^010"
-                includetext = true
-                //targetWidth = 30
-            }
-            if (password.selected) {
-                //bcid = "code128"
-                bcid = "azteccode"
-                value += "^013^010"
-                //targetWidth = 30
             }
             let canvas = document.createElement("canvas")
             let result = bwipjs.toCanvas(canvas, { 
                 bcid: bcid, 
                 text: value, 
-                includetext: includetext,
+                includetext: false,
                 padding: 0,
                 backgroundcolor: "#ffffff",
                 barcolor: "#000000",
-                rotate: "R",
                 scale: defaultScale,
                 parse: true
             })
@@ -136,6 +124,6 @@
     </style>
 </head>
 <body>
-    <div id="container"><input type="text" id="text" value="" placeholder="barcode data"><br /><select id="type"><option value="placeholder" disabled selected>barcode type</option><option id="username">username</option><option id="password">password</option><option id="aztec">simple logon</option></select><br /><button id="button">generate</button></div>
+    <div id="container"><input type="text" id="text" value="" placeholder="barcode data"><br /><select id="type"><option value="placeholder" disabled selected>barcode type</option><option id="word">username or password</option><option id="aztec">simple logon</option></select><br /><button id="button">generate</button></div>
 </body>
 </html>
